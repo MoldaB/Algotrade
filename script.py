@@ -47,10 +47,6 @@ new_features = ['avr_price'
                 , 'activity_hours_04_to_08']
 new_df = pandas.DataFrame
 
-def joinDFWithNewDF(df):
-    new_df.join(df.set_index('Id'), on='acc_Num')
-
-
 try:
     file_abs_path = os.path.abspath(os.path.join(os.getcwd(), "orders.csv"))
     with open(file_abs_path, 'r') as f:
@@ -72,5 +68,4 @@ try:
 
 except Exception as inst:
     print(inst.args)
-    # traceback.print_exc()
     sys.exit()
