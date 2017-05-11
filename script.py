@@ -1,16 +1,5 @@
-import sys
 import os
 import pandas as pd
-import numpy as nm
-
-path = os.getcwd()
-path_orders_file = "orders.csv"
-path_output_file = "output_file.csv"
-orders_file = None
-orders_head = None
-order_lines = []
-orders_set = None
-
 
 new_features = ['avr_price'
                 , 'max_price'
@@ -48,6 +37,32 @@ new_features = ['avr_price'
                 , 'activity_hours_04_to_08']
 new_df = pd.DataFrame
 
+def findOrdersUpdates(data_set):
+    orders = {}
+    # gather order lists
+    for index, row in orders_set.iterrows():
+        new_order_chain = {
+            'acc_num': row['Id'],
+            'prev_order': row['OrigOrdNo'],
+            'next_order': row['ReplOrdNo']
+        }
+        if row['OrigOrdNo'] in orders.keys():
+            orders[row['OrigOrdNo']]['next_order'] = new_order_chain
+        elif row['ReplOrdNo'] in orders.keys():
+            orders[row['ReplOrdNo']]['next_order']= new_order_chain
+        else:
+            orders[row['OrdNo']] = new_order_chain
+    for orderKey in orders:
+        order = orders[orderKey]
+        last_order_link = order['next_order']
+        updates_count = 0
+        while type(last_order_link) is not int:
+            updates_count += 1
+            last_order_link = last_order_link['next_order']
+        order['updates_count'] = updates_count
+    return list(map(lambda x: {'Id': orders[x]['acc_num'],
+                               'OrdNo': x,
+                               'order_updates_count': orders[x]['updates_count']}, orders))
 
 file_abs_path = os.path.abspath(os.path.join(os.getcwd(), "orders_1.csv"))
 with open(file_abs_path, 'r') as f:
@@ -87,6 +102,15 @@ with open(file_abs_path, 'r') as f:
         .sum()\
         .apply(lambda x: x / x.sum() * 100, axis=1)
     print(grouped_buy_sell.head())
+
+    orders_updates = findOrdersUpdates(orders_set)
+    def_orders = pd.DataFrame.from_dict(orders_updates, orient='columns')
+    f1 = {'order_updates_count': {'avr_num_of_Updates_per_order': 'mean',
+                                  'max_num_of_Updates_per_order': 'max',
+                                  'std_num_of_Updates_per_order': 'std'}}
+    grouped_orders = def_orders.groupby('Id').agg(f1)
+    print(grouped_orders.head())
+
     new_df = grouped1.join(grouped_status, how='outer')\
-        .join(grouped_buy_sell, how='outer')
+        .join(grouped_buy_sell, how='outer').join(grouped_orders, how='outer')
     new_df.to_csv('new_df.csv')
