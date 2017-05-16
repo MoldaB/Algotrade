@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import numpy as np
+from datetime import datetime
 
 new_features = ['avr_price'
                 , 'max_price'
@@ -14,7 +16,6 @@ new_features = ['avr_price'
                 , 'partial_vol_percent'
                 , 'QGFlag'
                 , 'IOC//None'
-
                 , 'avr_num_of_Updates_per_order'
                 , 'max_num_of_Updates_per_order'
                 , 'std_num_of_Updates_per_order'
@@ -64,9 +65,27 @@ def findOrdersUpdates(data_set):
                                'OrdNo': x,
                                'order_updates_count': orders[x]['updates_count']}, orders))
 
-file_abs_path = os.path.abspath(os.path.join(os.getcwd(), "orders_1.csv"))
+def findActionsPerTime(data_set, time):
+    actions_df = []
+    for acc_num in data_set.Id.unique():
+        account_actions = data_set.loc[(data_set['Id'] == acc_num)]
+        account_actions.TrdDateTime.apply(lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
+        account_actions.TrdDateTime = pd.to_datetime(data_set['TrdDateTime'])
+        account_actions = account_actions.sort_values('TrdDateTime', ascending=1)
+
+        secondly = account_actions.set_index('TrdDateTime').groupby(pd.TimeGrouper(freq= str(time)+'s'))['Id'].count()
+        secondly = secondly.tolist()
+
+        fake_list = []
+        for action_count in secondly:
+            fake_list.append({'Id' : acc_num, 'actions_count': action_count})
+        actions_df.extend(fake_list)
+    return actions_df
+
+file_abs_path = os.path.abspath(os.path.join(os.getcwd(), "orders.csv"))
 with open(file_abs_path, 'r') as f:
     orders_set = pd.read_csv(f)
+
 
     orders_set['QGFlag'] = orders_set['QGFlag'].map({'QG': 1})
     orders_set['Cond'] = orders_set['Cond'].map({'IOC': 1})
@@ -111,6 +130,43 @@ with open(file_abs_path, 'r') as f:
     grouped_orders = def_orders.groupby('Id').agg(f1)
     print(grouped_orders.head())
 
+    actions_agg = findActionsPerTime(orders_set, 1)
+    def_actions = pd.DataFrame.from_dict(actions_agg, orient='columns')
+    f2 = {'actions_count': {'avr_Actions_perSec': 'mean',
+                      'max_Actions_perSec': 'max',
+                      'std_Actions_perSec': 'std'}}
+    grouped_actions = def_actions.groupby('Id').agg(f2)
+    print(grouped_actions.head())
+
+    actions_agg2 = findActionsPerTime(orders_set, 2)
+    def_actions2 = pd.DataFrame.from_dict(actions_agg2, orient='columns')
+    f2_2 = {'actions_count': {'avr_Actions_perSec': 'mean',
+                      'max_Actions_perSec': 'max',
+                      'std_Actions_perSec': 'std'}}
+    grouped_actions2 = def_actions2.groupby('Id').agg(f2_2)
+    print(grouped_actions2.head())
+
+    actions_agg3 = findActionsPerTime(orders_set, 10)
+    def_actions3 = pd.DataFrame.from_dict(actions_agg3, orient='columns')
+    f2_3 = {'actions_count': {'avr_Actions_perSec': 'mean',
+                      'max_Actions_perSec': 'max',
+                      'std_Actions_perSec': 'std'}}
+    grouped_actions3 = def_actions3.groupby('Id').agg(f2_3)
+    print(grouped_actions3.head())
+
+    actions_agg4 = findActionsPerTime(orders_set, 60)
+    def_actions4 = pd.DataFrame.from_dict(actions_agg4, orient='columns')
+    f2_4 = {'actions_count': {'avr_Actions_perSec': 'mean',
+                      'max_Actions_perSec': 'max',
+                      'std_Actions_perSec': 'std'}}
+    grouped_actions4 = def_actions4.groupby('Id').agg(f2_4)
+    print(grouped_actions4.head())
+
     new_df = grouped1.join(grouped_status, how='outer')\
-        .join(grouped_buy_sell, how='outer').join(grouped_orders, how='outer')
+        .join(grouped_buy_sell, how='outer')\
+        .join(grouped_orders, how='outer')\
+        .join(grouped_actions, how='outer')\
+        .join(grouped_actions2, how='outer')\
+        .join(grouped_actions3, how='outer')\
+        .join(grouped_actions4, how='outer')
     new_df.to_csv('new_df.csv')
