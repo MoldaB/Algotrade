@@ -78,13 +78,13 @@ def findActionsPerTime(data_set, time):
 
         fake_list = []
         for action_count in secondly:
-            fake_list.append({'Id' : acc_num, 'actions_count': action_count})
+            fake_list.append({'Id': acc_num, 'actions_count': action_count})
         actions_df.extend(fake_list)
     return actions_df
 
 file_abs_path = os.path.abspath(os.path.join(os.getcwd(), "orders.csv"))
 with open(file_abs_path, 'r') as f:
-    orders_set = pd.read_csv(f)
+    orders_set = pd.read_csv(f, nrows=2000)
 
 
     orders_set['QGFlag'] = orders_set['QGFlag'].map({'QG': 1})
@@ -140,25 +140,25 @@ with open(file_abs_path, 'r') as f:
 
     actions_agg2 = findActionsPerTime(orders_set, 2)
     def_actions2 = pd.DataFrame.from_dict(actions_agg2, orient='columns')
-    f2_2 = {'actions_count': {'avr_Actions_perSec': 'mean',
-                      'max_Actions_perSec': 'max',
-                      'std_Actions_perSec': 'std'}}
+    f2_2 = {'actions_count': {'avr_Actions_per2Sec': 'mean',
+                      'max_Actions_per2Sec': 'max',
+                      'std_Actions_per2Sec': 'std'}}
     grouped_actions2 = def_actions2.groupby('Id').agg(f2_2)
     print(grouped_actions2.head())
 
     actions_agg3 = findActionsPerTime(orders_set, 10)
     def_actions3 = pd.DataFrame.from_dict(actions_agg3, orient='columns')
-    f2_3 = {'actions_count': {'avr_Actions_perSec': 'mean',
-                      'max_Actions_perSec': 'max',
-                      'std_Actions_perSec': 'std'}}
+    f2_3 = {'actions_count': {'avr_Actions_per10Sec': 'mean',
+                      'max_Actions_per10Sec': 'max',
+                      'std_Actions_per10Sec': 'std'}}
     grouped_actions3 = def_actions3.groupby('Id').agg(f2_3)
     print(grouped_actions3.head())
 
     actions_agg4 = findActionsPerTime(orders_set, 60)
     def_actions4 = pd.DataFrame.from_dict(actions_agg4, orient='columns')
-    f2_4 = {'actions_count': {'avr_Actions_perSec': 'mean',
-                      'max_Actions_perSec': 'max',
-                      'std_Actions_perSec': 'std'}}
+    f2_4 = {'actions_count': {'avr_Actions_per60Sec': 'mean',
+                      'max_Actions_per60Sec': 'max',
+                      'std_Actions_per60Sec': 'std'}}
     grouped_actions4 = def_actions4.groupby('Id').agg(f2_4)
     print(grouped_actions4.head())
 
